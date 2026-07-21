@@ -1,0 +1,1776 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Network Automation — Desktop App Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+      :root {
+        --sidebar-bg: #0f2a20;
+        --sidebar-bg-2: #153524;
+        --sidebar-active: #28513c;
+        --sidebar-text: #cfe3d6;
+        --sidebar-text-dim: #7fa08c;
+        --accent: #3f7a52;
+        --accent-dark: #2c5b3f;
+        --accent-light: #e6f2ea;
+        --bg: #f3f6f4;
+        --panel: #ffffff;
+        --border: #e3e9e5;
+        --text: #152019;
+        --text-muted: #66786f;
+        --danger: #c14b43;
+        --danger-light: #fbebe9;
+        --success: #2f8f5b;
+        --success-light: #e7f6ee;
+        --warn: #a97a17;
+        --warn-light: #fbf2df;
+        --radius: 10px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        font-size: 14px;
+      }
+      .mono {
+        font-family: "IBM Plex Mono", monospace;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+      }
+      input,
+      select {
+        font-family: inherit;
+      }
+      a {
+        color: inherit;
+      }
+
+      /* ===== Buttons ===== */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: var(--accent-dark);
+      }
+      .btn-outline {
+        background: #fff;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        border: 1px solid transparent;
+      }
+      .btn-ghost:hover {
+        background: var(--accent-light);
+        color: var(--accent-dark);
+      }
+      .btn-sm {
+        padding: 6px 11px;
+        font-size: 12px;
+        border-radius: 6px;
+      }
+      .btn-danger {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: var(--text-muted);
+      }
+      .icon-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent-dark);
+      }
+
+      /* ===== Badges / pills ===== */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 9px;
+        border-radius: 99px;
+        font-size: 11.5px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+      .badge-success {
+        background: var(--success-light);
+        color: var(--success);
+      }
+      .badge-warn {
+        background: var(--warn-light);
+        color: var(--warn);
+      }
+      .badge-danger {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
+      .badge-neutral {
+        background: #eef1ef;
+        color: var(--text-muted);
+      }
+      .badge-accent {
+        background: var(--accent-light);
+        color: var(--accent-dark);
+      }
+
+      .pill-toggle {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .pill-toggle button {
+        border: none;
+        background: #fff;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+      .pill-toggle button.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* ===== Login screen ===== */
+      #view-login {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(
+          circle at 20% 20%,
+          #17402d 0%,
+          #0d2318 55%,
+          #081712 100%
+        );
+      }
+      .login-card {
+        width: 380px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 36px 32px 30px;
+        box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+      }
+      .login-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 22px;
+      }
+      .login-logo .mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+      }
+      .login-logo .name {
+        font-weight: 800;
+        font-size: 16px;
+        letter-spacing: -0.01em;
+      }
+      .login-logo .sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-top: -2px;
+      }
+      .field {
+        margin-bottom: 14px;
+      }
+      .field label {
+        display: block;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+      }
+      .field input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13.5px;
+        outline: none;
+      }
+      .field input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-light);
+      }
+      .field-check {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin: 2px 0 18px;
+      }
+      .login-card .btn-primary {
+        width: 100%;
+        justify-content: center;
+        padding: 11px;
+        font-size: 13.5px;
+      }
+      .login-note {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        text-align: center;
+        margin-top: 16px;
+        line-height: 1.5;
+      }
+      .login-error {
+        background: var(--danger-light);
+        color: var(--danger);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 10px;
+        border-radius: 7px;
+        margin-bottom: 12px;
+        display: none;
+      }
+
+      /* ===== Loading screen ===== */
+      #view-loading {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        background: radial-gradient(
+          circle at 80% 80%,
+          #17402d 0%,
+          #0d2318 55%,
+          #081712 100%
+        );
+        color: #eafaf1;
+      }
+      .loader-ring {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        border-top-color: #5fd191;
+        animation: spin 1s linear infinite;
+        margin-bottom: 26px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-steps {
+        width: 340px;
+        margin-top: 22px;
+      }
+      .loading-step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        color: #7fa08c;
+        padding: 6px 0;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+      }
+      .loading-step.active {
+        opacity: 1;
+        color: #dff5e7;
+      }
+      .loading-step.done {
+        opacity: 0.85;
+        color: #5fd191;
+      }
+      .loading-step .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #3a5c48;
+        flex: none;
+      }
+      .loading-step.active .dot {
+        background: #5fd191;
+        box-shadow: 0 0 0 4px rgba(95, 209, 145, 0.2);
+      }
+      .loading-step.done .dot {
+        background: #5fd191;
+      }
+      .loading-title {
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: 0.01em;
+      }
+
+      /* ===== Shell ===== */
+      #app-shell {
+        display: none;
+        height: 100vh;
+      }
+      .shell-grid {
+        display: grid;
+        grid-template-columns: 236px 1fr;
+        height: 100vh;
+      }
+      .sidebar {
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        display: flex;
+        flex-direction: column;
+        padding: 18px 0;
+        overflow-y: auto;
+      }
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 18px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 10px;
+      }
+      .sidebar-logo .mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+        color: #fff;
+      }
+      .sidebar-logo .name {
+        font-weight: 800;
+        font-size: 14.5px;
+        color: #fff;
+        letter-spacing: -0.01em;
+      }
+      .sidebar-logo .sub {
+        font-size: 10px;
+        color: var(--sidebar-text-dim);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .nav-group-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--sidebar-text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 14px 18px 6px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--sidebar-text);
+        cursor: pointer;
+        border-left: 3px solid transparent;
+      }
+      .nav-item .ic {
+        width: 16px;
+        text-align: center;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .nav-item.active {
+        background: var(--sidebar-active);
+        border-left-color: #5fd191;
+        color: #fff;
+      }
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 14px 18px 4px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .sidebar-balance {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 9px;
+        padding: 11px 12px;
+        margin-bottom: 10px;
+      }
+      .sidebar-balance .lbl {
+        font-size: 10px;
+        color: var(--sidebar-text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .sidebar-balance .amt {
+        font-weight: 800;
+        font-size: 15px;
+        color: #fff;
+        margin-top: 2px;
+      }
+      .nav-item.logout {
+        color: #e8a7a2;
+      }
+
+      .main-col {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 26px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        flex: none;
+      }
+      .topbar h1 {
+        font-size: 17px;
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .topbar .crumb {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent-light);
+        color: var(--accent-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 12.5px;
+      }
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 26px 40px;
+      }
+
+      /* ===== Cards / stats ===== */
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      .grid-2-1 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px;
+      }
+      .stat-card .lbl {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+      }
+      .stat-card .val {
+        font-size: 26px;
+        font-weight: 800;
+        margin-top: 6px;
+        letter-spacing: -0.02em;
+      }
+      .stat-card .delta {
+        font-size: 11.5px;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+      .stat-card .delta.up {
+        color: var(--success);
+      }
+      .stat-card .delta.down {
+        color: var(--danger);
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .card-head h3 {
+        font-size: 13px;
+        margin: 0;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .card-head .sub-action {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+
+      /* ===== Tables ===== */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        text-align: left;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        font-weight: 700;
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 10px 10px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      td.mono,
+      th.mono {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+      .search-box {
+        position: relative;
+        flex: 1;
+        min-width: 200px;
+      }
+      .search-box input {
+        width: 100%;
+        padding: 9px 12px 9px 32px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        outline: none;
+      }
+      .search-box input:focus {
+        border-color: var(--accent);
+      }
+      .search-box::before {
+        content: "⌕";
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 15px;
+      }
+      select.filter-select {
+        padding: 9px 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* ===== Progress ===== */
+      .progress-track {
+        background: #eef1ef;
+        border-radius: 99px;
+        height: 7px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 99px;
+        transition: width 0.3s ease;
+      }
+      .stage-track {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+      }
+      .stage-dot {
+        flex: 1;
+        height: 5px;
+        border-radius: 99px;
+        background: #e7ece9;
+      }
+      .stage-dot.done {
+        background: var(--accent);
+      }
+      .stage-dot.current {
+        background: var(--warn);
+      }
+
+      /* ===== Config table ===== */
+      .rule-row {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr 1fr 60px;
+        gap: 10px;
+        align-items: center;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .rule-row:last-child {
+        border-bottom: none;
+      }
+      .switch {
+        width: 38px;
+        height: 21px;
+        border-radius: 99px;
+        background: #dfe6e2;
+        position: relative;
+        cursor: pointer;
+        flex: none;
+      }
+      .switch.on {
+        background: var(--accent);
+      }
+      .switch .knob {
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: #fff;
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        transition: left 0.15s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      }
+      .switch.on .knob {
+        left: 19px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+      }
+      .empty-state .ic {
+        font-size: 30px;
+        margin-bottom: 8px;
+      }
+
+      ::-webkit-scrollbar {
+        width: 9px;
+        height: 9px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d3dcd7;
+        border-radius: 99px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .toast-wrap {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 50;
+      }
+      .toast {
+        background: #16302a;
+        color: #eafaf1;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: toastIn 0.2s ease;
+      }
+      @keyframes toastIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============ LOGIN ============ -->
+    <div id="view-login">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="mark">NA</div>
+          <div>
+            <div class="name">Network Automation</div>
+            <div class="sub">Desktop App</div>
+          </div>
+        </div>
+        <div class="login-error" id="loginError">
+          Couldn't verify those credentials. Check your BNI ID and password.
+        </div>
+        <div class="field">
+          <label>BNI ID</label>
+          <input
+            type="text"
+            id="bniIdInput"
+            placeholder="you@chapter.bni.com"
+            value="rahul.mehta"
+          />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input
+            type="password"
+            id="bniPassInput"
+            placeholder="••••••••"
+            value="••••••••"
+          />
+        </div>
+        <label class="field-check"
+          ><input type="checkbox" id="rememberMe" checked style="margin: 0" />
+          Remember this BNI ID &amp; password on this device</label
+        >
+        <button class="btn btn-primary" onclick="handleLogin()">
+          Log in &amp; fetch my BNI data
+        </button>
+        <div class="login-note">
+          This connects with your own BNI membership account to pull your
+          chapter's directory. Nothing is shared outside this app.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LOADING ============ -->
+    <div id="view-loading">
+      <div class="loader-ring"></div>
+      <div class="loading-title">Fetching your data…</div>
+      <div class="loading-steps" id="loadingSteps"></div>
+    </div>
+
+    <!-- ============ APP SHELL ============ -->
+    <div id="app-shell">
+      <div class="shell-grid">
+        <div class="sidebar">
+          <div class="sidebar-logo">
+            <div class="mark">NA</div>
+            <div>
+              <div class="name">Network Automation</div>
+              <div class="sub">Desktop App</div>
+            </div>
+          </div>
+
+          <div class="nav-group-label">Dashboard</div>
+          <div
+            class="nav-item"
+            data-view="overview"
+            onclick="navigate('overview')"
+          >
+            <span class="ic">▣</span> Overview
+          </div>
+          <div class="nav-item" data-view="leads" onclick="navigate('leads')">
+            <span class="ic">☰</span> Data Directory
+          </div>
+
+          <div class="nav-group-label">Campaigns</div>
+          <div
+            class="nav-item"
+            data-view="campaigns"
+            onclick="navigate('campaigns')"
+          >
+            <span class="ic">⌗</span> Build Campaigns
+          </div>
+          <div class="nav-item" data-view="auto" onclick="navigate('auto')">
+            <span class="ic">⟳</span> Auto Campaign
+          </div>
+          <div class="nav-item" data-view="manual" onclick="navigate('manual')">
+            <span class="ic">▷</span> Manual Campaign
+          </div>
+
+          <div class="nav-group-label">Insights</div>
+          <div
+            class="nav-item"
+            data-view="reports"
+            onclick="navigate('reports')"
+          >
+            <span class="ic">◫</span> Reports &amp; Analytics
+          </div>  
+          <!-- <div class="nav-item" data-view="config" onclick="navigate('config')">
+            <span class="ic">⚙</span> Channel Config
+          </div> -->
+
+          <div class="sidebar-footer">
+            <div class="nav-item logout" onclick="handleLogout()">
+              <span class="ic">⏻</span> Log out
+            </div>
+          </div>
+        </div>
+
+        <div class="main-col">
+          <div class="topbar">
+            <div>
+              <div class="crumb" id="crumbLabel">Dashboard</div>
+              <h1 id="pageTitle">Overview</h1>
+            </div>
+            <div class="topbar-right" id="topbarActions"></div>
+          </div>
+          <div class="content" id="viewContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast-wrap" id="toastWrap"></div>
+
+    <script>
+      /* =========================================================================
+   MOCK DATA LAYER
+   ========================================================================= */
+      const STAGES = [
+        "Email Campaign",
+        "2nd FollowUp Email",
+        "3rd FollowUp Email",
+        "WhatsApp",
+        "2nd FollowUp WhatsApp",
+      ];
+
+      const CATEGORIES = [
+        { id: "webdev", name: "Website Development", total: 5000 },
+        { id: "acct", name: "Accounting", total: 3400 },
+        { id: "legal", name: "Legal Services", total: 2100 },
+        { id: "realty", name: "Real Estate", total: 4800 },
+        { id: "ins", name: "Life Insurance", total: 2600 },
+        { id: "mktg", name: "Marketing & Branding", total: 3100 },
+        { id: "it", name: "IT Services", total: 2900 },
+        { id: "fin", name: "Financial Planning", total: 1900 },
+      ];
+
+      const FIRST = [
+        "Rahul",
+        "Priya",
+        "Amit",
+        "Sneha",
+        "Vikram",
+        "Anita",
+        "Karan",
+        "Neha",
+        "Rohit",
+        "Divya",
+        "Sanjay",
+        "Pooja",
+        "Arjun",
+        "Meera",
+        "Nikhil",
+        "Kavya",
+        "Suresh",
+        "Ritu",
+        "Manish",
+        "Shreya",
+      ];
+      const LAST = [
+        "Mehta",
+        "Shah",
+        "Verma",
+        "Kapoor",
+        "Iyer",
+        "Nair",
+        "Gupta",
+        "Reddy",
+        "Joshi",
+        "Chawla",
+        "Malhotra",
+        "Bose",
+        "Rao",
+        "Desai",
+        "Kulkarni",
+      ];
+      const DOMAINS_CO = [
+        "brightbuild.in",
+        "zenithcapital.co",
+        "northstar-legal.com",
+        "apexrealty.in",
+        "primeinsure.co.in",
+      ];
+      const DOMAINS_G = ["gmail.com", "yahoo.com", "outlook.com"];
+
+      function seededRand(seed) {
+        let s = seed;
+        return () => {
+          s = (s * 9301 + 49297) % 233280;
+          return s / 233280;
+        };
+      }
+
+      function buildLeadsSample(cat, count) {
+        const rnd = seededRand(cat.id.length * 777 + count);
+        const rows = [];
+        for (let i = 0; i < count; i++) {
+          const f = FIRST[Math.floor(rnd() * FIRST.length)];
+          const l = LAST[Math.floor(rnd() * LAST.length)];
+          const useCoDomain = rnd() > 0.42;
+          const noEmail = rnd() > 0.9;
+          const domain = useCoDomain
+            ? DOMAINS_CO[Math.floor(rnd() * DOMAINS_CO.length)]
+            : DOMAINS_G[Math.floor(rnd() * DOMAINS_G.length)];
+          const email = noEmail
+            ? ""
+            : `${f.toLowerCase()}.${l.toLowerCase()}@${domain}`;
+          const phone = "9" + Math.floor(100000000 + rnd() * 899999999);
+          const website = useCoDomain ? `www.${domain}` : "";
+          rows.push({
+            id: cat.id + "-" + i,
+            name: f + " " + l,
+            email,
+            phone,
+            website,
+            category: cat.name,
+            channel: !email
+              ? "No contact info"
+              : useCoDomain
+                ? "Company domain"
+                : "Gmail/consumer domain",
+          });
+        }
+        return rows;
+      }
+
+      /* =========================================================================
+   APP STATE
+   ========================================================================= */
+      const state = {
+        view: "overview",
+        selectedCategory: CATEGORIES[0].id,
+        leadsSample: {}, // categoryId -> array of sample rows
+        leadsPage: 1,
+        leadsSearch: "",
+        batchSize: 200,
+        campaigns: [], // built campaign batches
+        autoRunning: false,
+        autoTimer: null,
+        events: [], // activity log
+        totals: { sent: 1763, received: 817 },
+        config: {
+          rules: [
+            {
+              label: "Company domain email",
+              sample: "@company.com",
+              channel: "Email",
+              enabled: true,
+            },
+            {
+              label: "Gmail / consumer email (Gmail, Yahoo, Outlook)",
+              sample: "@gmail.com",
+              channel: "Email",
+              enabled: true,
+            },
+            {
+              label: "No email, phone available",
+              sample: "—",
+              channel: "WhatsApp",
+              enabled: true,
+            },
+            {
+              label: "No email and no phone",
+              sample: "—",
+              channel: "Skip / manual review",
+              enabled: false,
+            },
+          ],
+        },
+      };
+
+      function currentCategory() {
+        return CATEGORIES.find((c) => c.id === state.selectedCategory);
+      }
+      function getSample(catId) {
+        if (!state.leadsSample[catId]) {
+          const cat = CATEGORIES.find((c) => c.id === catId);
+          state.leadsSample[catId] = buildLeadsSample(
+            cat,
+            Math.min(cat.total, 120),
+          );
+        }
+        return state.leadsSample[catId];
+      }
+
+      /* =========================================================================
+   LOGIN / LOADING FLOW
+   ========================================================================= */
+      function handleLogin() {
+        const id = document.getElementById("bniIdInput").value.trim();
+        const pass = document.getElementById("bniPassInput").value.trim();
+        const err = document.getElementById("loginError");
+        if (!id || !pass) {
+          err.style.display = "block";
+          return;
+        }
+        err.style.display = "none";
+        document.getElementById("view-login").style.display = "none";
+        document.getElementById("view-loading").style.display = "flex";
+        runLoadingSequence();
+      }
+
+      function runLoadingSequence() {
+        const steps = [
+          "Connecting to your BNI account…",
+          "Authenticating credentials…",
+          "Fetching chapter directory…",
+          "Categorizing leads by business category…",
+          "Ready.",
+        ];
+        const wrap = document.getElementById("loadingSteps");
+        wrap.innerHTML = steps
+          .map(
+            (s, i) =>
+              `<div class="loading-step" id="lstep-${i}"><span class="dot"></span>${s}</div>`,
+          )
+          .join("");
+        let i = 0;
+        function tick() {
+          if (i > 0)
+            document
+              .getElementById(`lstep-${i - 1}`)
+              .classList.replace("active", "done");
+          if (i < steps.length) {
+            document.getElementById(`lstep-${i}`).classList.add("active");
+            i++;
+            setTimeout(tick, i === steps.length ? 500 : 550);
+          } else {
+            setTimeout(() => {
+              document.getElementById("view-loading").style.display = "none";
+              document.getElementById("app-shell").style.display = "block";
+              buildCampaigns();
+              navigate("overview");
+            }, 400);
+          }
+        }
+        tick();
+      }
+
+      function handleLogout() {
+        if (state.autoTimer) clearInterval(state.autoTimer);
+        document.getElementById("app-shell").style.display = "none";
+        document.getElementById("view-login").style.display = "flex";
+        document.getElementById("loginError").style.display = "none";
+      }
+
+      /* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+      const VIEW_META = {
+        overview: { title: "Overview", crumb: "Dashboard" },
+        leads: { title: "Data Directory", crumb: "Dashboard" },
+        campaigns: { title: "Build Campaigns", crumb: "Campaigns" },
+        auto: { title: "Auto Campaign", crumb: "Campaigns" },
+        manual: { title: "Manual Campaign", crumb: "Campaigns" },
+        reports: { title: "Reports & Analytics", crumb: "Insights" },
+        config: { title: "Channel Config", crumb: "Insights" },
+      };
+
+      function navigate(view) {
+        state.view = view;
+        document.querySelectorAll(".nav-item[data-view]").forEach((el) => {
+          el.classList.toggle("active", el.dataset.view === view);
+        });
+        document.getElementById("pageTitle").textContent =
+          VIEW_META[view].title;
+        document.getElementById("crumbLabel").textContent =
+          VIEW_META[view].crumb;
+        renderTopbarActions(view);
+        renderView(view);
+      }
+
+      function renderTopbarActions(view) {
+        const el = document.getElementById("topbarActions");
+        if (view === "overview") {
+          el.innerHTML = `<div class="avatar">RM</div>`;
+        } else if (view === "leads") {
+          el.innerHTML = `<button class="btn btn-primary btn-sm" onclick="navigate('campaigns')">Build campaigns from this data</button><div class="avatar">RM</div>`;
+        } else {
+          el.innerHTML = `<div class="avatar">RM</div>`;
+        }
+      }
+
+      function renderView(view) {
+        const c = document.getElementById("viewContainer");
+        if (view === "overview") return renderOverview(c);
+        if (view === "leads") return renderLeads(c);
+        if (view === "campaigns") return renderCampaignsBuilder(c);
+        if (view === "auto") return renderAutoCampaign(c);
+        if (view === "manual") return renderManualCampaign(c);
+        if (view === "reports") return renderReports(c);
+        if (view === "config") return renderConfig(c);
+      }
+
+      /* =========================================================================
+   OVERVIEW
+   ========================================================================= */
+      function renderOverview(c) {
+        const sentPct = 98.98,
+          failPct = 1.02;
+        c.innerHTML = `
+    <div class="grid-4">
+      <div class="card stat-card"><div class="lbl">Total Sent</div><div class="val mono">${state.totals.sent.toLocaleString()}</div><div class="delta up">↑ across all channels</div></div>
+      <div class="card stat-card"><div class="lbl">Total Received</div><div class="val mono">${state.totals.received.toLocaleString()}</div><div class="delta up">replies & opens</div></div>
+      <div class="card stat-card"><div class="lbl">Success Rate</div><div class="val mono">${sentPct}%</div><div class="delta up">↑ 0.4% vs last week</div></div>
+      <div class="card stat-card"><div class="lbl">Failed</div><div class="val mono">${failPct}%</div><div class="delta down">↓ bad numbers / bounces</div></div>
+    </div>
+    <div class="grid-2-1">
+      <div class="card">
+        <div class="card-head"><h3>Messages — last 7 days</h3><span class="sub-action">Email vs WhatsApp</span></div>
+        <canvas id="overviewChart" height="150"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Recent Events</h3><span class="sub-action">Last 7 days</span></div>
+      ${renderEventsList()}
+    </div>
+  `;
+        const ctx = document.getElementById("overviewChart");
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: days,
+            datasets: [
+              {
+                label: "Email",
+                data: [210, 180, 260, 190, 240, 120, 90],
+                backgroundColor: "#3f7a52",
+                borderRadius: 4,
+              },
+              {
+                label: "WhatsApp",
+                data: [140, 160, 120, 150, 110, 80, 60],
+                backgroundColor: "#9fd3b3",
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: { boxWidth: 10, font: { size: 11 } },
+              },
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { color: "#eef1ef" } },
+            },
+          },
+        });
+      }
+
+      function renderEventsList() {
+        if (state.events.length === 0) {
+          return `<div class="empty-state"><div class="ic">◫</div>Nothing has run yet. Start a campaign from <b>Auto</b> or <b>Manual Campaign</b> to see activity here.</div>`;
+        }
+        return `<table><tbody>${state.events
+          .slice(0, 8)
+          .map(
+            (e) => `
+    <tr><td style="width:110px;color:var(--text-muted);" class="mono">${e.time}</td>
+        <td>${e.text}</td>
+        <td style="width:120px;text-align:right;">${e.badge}</td></tr>
+  `,
+          )
+          .join("")}</tbody></table>`;
+      }
+
+      /* =========================================================================
+   LEADS DIRECTORY
+   ========================================================================= */
+      function renderLeads(c) {
+        const cat = currentCategory();
+        const rows = getSample(cat.id).filter((r) => {
+          if (!state.leadsSearch) return true;
+          const q = state.leadsSearch.toLowerCase();
+          return (
+            r.name.toLowerCase().includes(q) ||
+            r.email.toLowerCase().includes(q) ||
+            r.phone.includes(q)
+          );
+        });
+        const perPage = 10;
+        const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+        state.leadsPage = Math.min(state.leadsPage, totalPages);
+        const pageRows = rows.slice(
+          (state.leadsPage - 1) * perPage,
+          state.leadsPage * perPage,
+        );
+
+        c.innerHTML = `
+    <div class="card" style="margin-bottom:14px;">
+      <div class="toolbar">
+        <select class="filter-select" onchange="onCategoryChange(this.value)">
+          ${CATEGORIES.map((cc) => `<option value="${cc.id}" ${cc.id === cat.id ? "selected" : ""}>${cc.name} — ${cc.total.toLocaleString()} leads</option>`).join("")}
+        </select>
+        <div class="search-box"><input type="text" placeholder="Search name, email or phone…" value="${state.leadsSearch}" oninput="onLeadsSearch(this.value)"></div>
+        <span class="badge badge-accent">Sample shown: ${rows.length.toLocaleString()} of ${cat.total.toLocaleString()}</span>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Website</th><th>Detected channel</th></tr></thead>
+        <tbody>
+          ${pageRows
+            .map(
+              (r) => `
+            <tr>
+              <td>${r.name}</td>
+              <td class="mono">${r.email || '<span style="color:var(--text-muted)">—</span>'}</td>
+              <td class="mono">${r.phone}</td>
+              <td class="mono">${r.website || '<span style="color:var(--text-muted)">—</span>'}</td>
+              <td>${channelBadge(r.channel)}</td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span>Page ${state.leadsPage} of ${totalPages}</span>
+        <span>
+          <button class="btn btn-outline btn-sm" onclick="changeLeadsPage(-1)" ${state.leadsPage <= 1 ? "disabled" : ""}>← Prev</button>
+          <button class="btn btn-outline btn-sm" onclick="changeLeadsPage(1)" ${state.leadsPage >= totalPages ? "disabled" : ""}>Next →</button>
+        </span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Category totals fetched from BNI</h3></div>
+      <table>
+        <thead><tr><th>Category</th><th>Data</th><th>Batches at ${state.batchSize}/batch</th></tr></thead>
+        <tbody>
+          ${CATEGORIES.map((cc) => `<tr><td>${cc.name}</td><td class="mono">${cc.total.toLocaleString()}</td><td class="mono">${Math.ceil(cc.total / state.batchSize)}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+      }
+      function channelBadge(ch) {
+        if (ch === "Company domain")
+          return `<span class="badge badge-success">Email · domain</span>`;
+        if (ch === "Gmail/consumer domain")
+          return `<span class="badge badge-accent">Email · gmail</span>`;
+        return `<span class="badge badge-neutral">No contact info</span>`;
+      }
+      function onCategoryChange(v) {
+        state.selectedCategory = v;
+        state.leadsPage = 1;
+        renderView("leads");
+      }
+      function onLeadsSearch(v) {
+        state.leadsSearch = v;
+        state.leadsPage = 1;
+        renderView("leads");
+      }
+      function changeLeadsPage(d) {
+        state.leadsPage += d;
+        renderView("leads");
+      }
+
+      /* =========================================================================
+   CAMPAIGN BUILDER  (category -> total / divider -> batch count)
+   ========================================================================= */
+      function buildCampaigns() {
+        const cat = currentCategory();
+        const n = Math.ceil(cat.total / state.batchSize);
+        state.campaigns = Array.from({ length: n }, (_, i) => {
+          const leadsInBatch = Math.min(
+            state.batchSize,
+            cat.total - i * state.batchSize,
+          );
+          return {
+            id: `${cat.id}-camp${i + 1}`,
+            name: `Camp ${i + 1}`,
+            category: cat.name,
+            leads: leadsInBatch,
+            mode: "manual",
+            stageIndex: 0, // 0..STAGES.length
+          };
+        });
+      }
+
+      function renderCampaignsBuilder(c) {
+        const cat = currentCategory();
+        const computed = Math.ceil(cat.total / state.batchSize);
+        c.innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><h3>Batch setup</h3></div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Category</label>
+          <select class="filter-select" onchange="onBuilderCategoryChange(this.value)">
+            ${CATEGORIES.map((cc) => `<option value="${cc.id}" ${cc.id === cat.id ? "selected" : ""}>${cc.name}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Data fetched</label>
+          <input class="mono" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:110px;" value="${cat.total.toLocaleString()}" disabled>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Divide by (batch size)</label>
+          <input class="mono" id="batchSizeInput" type="number" min="10" step="10" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:110px;" value="${state.batchSize}" onchange="onBatchSizeChange(this.value)">
+        </div>
+        <div style="padding:9px 14px;border-radius:8px;background:var(--accent-light);color:var(--accent-dark);font-weight:800;">
+          = ${computed} campaigns <span style="font-weight:500;font-size:12px;">of up to ${state.batchSize} data each</span>
+        </div>
+        <button class="btn btn-primary" onclick="buildCampaigns(); renderView('campaigns'); toast('Rebuilt ${computed} campaign batches')">Rebuild campaigns</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Campaign batches — ${cat.name}</h3>
+        <div class="pill-toggle">
+          <button onclick="setAllMode('manual')">Set all Manual</button>
+          <button onclick="setAllMode('auto')">Set all Auto</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Batch</th><th>Data</th><th>Mode</th><th>Sequence stage</th><th>Progress</th><th></th></tr></thead>
+        <tbody>
+          ${state.campaigns
+            .map(
+              (camp) => `
+            <tr>
+              <td><b>${camp.name}</b></td>
+              <td class="mono">${camp.leads}</td>
+              <td>
+                <div class="pill-toggle">
+                  <button class="${camp.mode === "manual" ? "active" : ""}" onclick="setCampMode('${camp.id}','manual')">Manual</button>
+                  <button class="${camp.mode === "auto" ? "active" : ""}" onclick="setCampMode('${camp.id}','auto')">Auto</button>
+                </div>
+              </td>
+              <td>${stageLabel(camp)}</td>
+              <td style="min-width:140px;">${stageTrackHtml(camp)}</td>
+              <td style="text-align:right;">
+                <button class="icon-btn" title="Run next stage" onclick="advanceCampaign('${camp.id}')" ${camp.stageIndex >= STAGES.length ? "disabled" : ""}>▷</button>
+              </td>
+            </tr>
+          `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+      }
+      function stageLabel(camp) {
+        if (camp.stageIndex >= STAGES.length)
+          return `<span class="badge badge-success">All stages sent</span>`;
+        return `<span class="badge badge-neutral">${STAGES[camp.stageIndex]}</span>`;
+      }
+      function stageTrackHtml(camp) {
+        return `<div class="stage-track">${STAGES.map((s, i) => `<div class="stage-dot ${i < camp.stageIndex ? "done" : i === camp.stageIndex ? "current" : ""}" title="${s}"></div>`).join("")}</div>`;
+      }
+      function onBuilderCategoryChange(v) {
+        state.selectedCategory = v;
+        buildCampaigns();
+        renderView("campaigns");
+      }
+      function onBatchSizeChange(v) {
+        state.batchSize = Math.max(10, parseInt(v) || 200);
+        renderView("campaigns");
+      }
+      function setAllMode(mode) {
+        state.campaigns.forEach((c) => (c.mode = mode));
+        renderView("campaigns");
+        toast(`All batches set to ${mode === "auto" ? "Auto" : "Manual"}`);
+      }
+      function setCampMode(id, mode) {
+        const camp = state.campaigns.find((c) => c.id === id);
+        camp.mode = mode;
+        renderView("campaigns");
+      }
+
+      function advanceCampaign(id) {
+        const camp = state.campaigns.find((c) => c.id === id);
+        if (!camp || camp.stageIndex >= STAGES.length) return;
+        const stage = STAGES[camp.stageIndex];
+        camp.stageIndex++;
+        logEvent(
+          `${camp.name} (${camp.category}) — <b>${stage}</b> sent to ${camp.leads} leads`,
+          camp.stageIndex >= STAGES.length
+            ? '<span class="badge badge-success">Batch done</span>'
+            : '<span class="badge badge-warn">In progress</span>',
+        );
+        state.totals.sent += camp.leads;
+        state.totals.received += Math.round(camp.leads * 0.42);
+        renderView(state.view);
+      }
+
+      /* =========================================================================
+   AUTO CAMPAIGN
+   ========================================================================= */
+      function renderAutoCampaign(c) {
+        const autoCamps = state.campaigns.filter((c) => c.mode === "auto");
+        c.innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><h3>Automation pipeline</h3></div>
+      <div class="stage-track" style="gap:0;margin-bottom:6px;">
+        ${STAGES.map(
+          (s, i) => `
+          <div style="flex:1;text-align:center;padding:0 4px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);">${i + 1}</div>
+            <div style="font-size:11.5px;font-weight:600;margin-top:2px;">${s}</div>
+          </div>`,
+        ).join("")}
+      </div>
+      <div style="display:flex;gap:6px;">
+        ${STAGES.map(() => `<div style="flex:1;height:4px;background:var(--accent-light);border-radius:99px;"></div>`).join("")}
+      </div>
+      <p style="color:var(--text-muted);font-size:12.5px;margin-top:14px;">
+        Batches set to <b>Auto</b> move through this sequence on their own — each run advances every auto batch by one stage. In production this would run on a schedule (e.g. every 2–3 days per stage); here you can trigger a run manually.
+      </p>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <button class="btn btn-primary" onclick="runAutoTick()" ${autoCamps.length === 0 ? "disabled" : ""}>▷ Run one automation tick</button>
+        <button class="btn ${state.autoRunning ? "btn-danger" : "btn-outline"}" onclick="toggleAutoLoop()" ${autoCamps.length === 0 ? "disabled" : ""}>${state.autoRunning ? "⏸ Stop continuous run" : "▶ Start continuous run (demo, every 3s)"}</button>
+      </div>
+      ${autoCamps.length === 0 ? `<div class="empty-state" style="margin-top:10px;"><div class="ic">⟳</div>No batches are set to Auto yet. Set batches to Auto from <b>Build Campaigns</b> first.</div>` : ""}
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Auto batches (${autoCamps.length})</h3></div>
+      ${
+        autoCamps.length === 0
+          ? `<div class="empty-state">Nothing here yet.</div>`
+          : `
+      <table>
+        <thead><tr><th>Batch</th><th>Leads</th><th>Stage</th><th>Progress</th></tr></thead>
+        <tbody>
+          ${autoCamps
+            .map(
+              (camp) => `
+            <tr>
+              <td><b>${camp.name}</b><div style="font-size:11px;color:var(--text-muted);">${camp.category}</div></td>
+              <td class="mono">${camp.leads}</td>
+              <td>${stageLabel(camp)}</td>
+              <td style="min-width:160px;">${stageTrackHtml(camp)}</td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>`
+      }
+    </div>
+  `;
+      }
+
+      function runAutoTick() {
+        const autoCamps = state.campaigns.filter(
+          (c) => c.mode === "auto" && c.stageIndex < STAGES.length,
+        );
+        if (autoCamps.length === 0) {
+          toast("All auto batches have completed the sequence");
+          if (state.autoTimer) {
+            clearInterval(state.autoTimer);
+            state.autoRunning = false;
+          }
+          return;
+        }
+        autoCamps.forEach((camp) => {
+          const stage = STAGES[camp.stageIndex];
+          camp.stageIndex++;
+          logEvent(
+            `${camp.name} (${camp.category}) — <b>${stage}</b> sent to ${camp.leads} leads`,
+            camp.stageIndex >= STAGES.length
+              ? '<span class="badge badge-success">Batch done</span>'
+              : '<span class="badge badge-warn">Auto</span>',
+          );
+          state.totals.sent += camp.leads;
+          state.totals.received += Math.round(camp.leads * 0.42);
+        });
+        toast(`Auto tick: advanced ${autoCamps.length} batch(es)`);
+        if (state.view === "auto") renderView("auto");
+      }
+      function toggleAutoLoop() {
+        if (state.autoRunning) {
+          clearInterval(state.autoTimer);
+          state.autoRunning = false;
+        } else {
+          state.autoRunning = true;
+          state.autoTimer = setInterval(runAutoTick, 3000);
+        }
+        renderView("auto");
+      }
+
+      /* =========================================================================
+   MANUAL CAMPAIGN
+   ========================================================================= */
+      function renderManualCampaign(c) {
+        const manualCamps = state.campaigns.filter((c) => c.mode === "manual");
+        c.innerHTML = `
+    <div class="card">
+      <div class="card-head"><h3>Manual batches (${manualCamps.length})</h3><span class="sub-action">Trigger any stage yourself, in any order</span></div>
+      ${
+        manualCamps.length === 0
+          ? `<div class="empty-state"><div class="ic">▷</div>No batches are set to Manual. Set batches to Manual from <b>Build Campaigns</b>.</div>`
+          : `
+      <table>
+        <thead><tr><th>Batch</th><th>Data</th><th>Current stage</th><th>Progress</th><th>Run a stage</th></tr></thead>
+        <tbody>
+          ${manualCamps
+            .map(
+              (camp) => `
+            <tr>
+              <td><b>${camp.name}</b><div style="font-size:11px;color:var(--text-muted);">${camp.category}</div></td>
+              <td class="mono">${camp.leads}</td>
+              <td>${stageLabel(camp)}</td>
+              <td style="min-width:150px;">${stageTrackHtml(camp)}</td>
+              <td>
+                ${
+                  camp.stageIndex >= STAGES.length
+                    ? `<span class="badge badge-success">Complete</span>`
+                    : `
+                <button class="btn btn-primary btn-sm" onclick="advanceCampaign('${camp.id}')">▷ Send "${STAGES[camp.stageIndex]}"</button>`
+                }
+              </td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>`
+      }
+    </div>
+  `;
+      }
+
+      /* =========================================================================
+   REPORTS
+   ========================================================================= */
+      function renderReports(c) {
+        const totalRuns = state.campaigns.reduce((a, x) => a + x.stageIndex, 0);
+        const emailRuns = totalRuns; // simplified split below
+        c.innerHTML = `
+    <div class="grid-4">
+      <div class="card stat-card"><div class="lbl">Total Sent</div><div class="val mono">${state.totals.sent.toLocaleString()}</div></div>
+      <div class="card stat-card"><div class="lbl">Total Received</div><div class="val mono">${state.totals.received.toLocaleString()}</div></div>
+      <div class="card stat-card"><div class="lbl">Batches completed</div><div class="val mono">${state.campaigns.filter((x) => x.stageIndex >= STAGES.length).length} / ${state.campaigns.length}</div></div>
+      <div class="card stat-card"><div class="lbl">Stage-runs logged</div><div class="val mono">${totalRuns}</div></div>
+    </div>
+    <div class="grid-2-1">
+      <div class="card">
+        <div class="card-head"><h3>Sequence funnel</h3><span class="sub-action">Batches at each stage</span></div>
+        <canvas id="funnelChart" height="150"></canvas>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Success vs Failed</h3></div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:8px 0 4px;">
+          <div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--accent) 0% 98.98%, var(--danger) 98.98% 100%);display:flex;align-items:center;justify-content:center;">
+            <div style="width:104px;height:104px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div style="font-weight:800;font-size:18px;">98.98%</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">success</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;font-size:12px;margin-top:8px;">
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:2px;margin-right:5px;"></span>Delivered</span>
+          <span><span style="display:inline-block;width:8px;height:8px;background:var(--danger);border-radius:2px;margin-right:5px;"></span>Failed</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Activity log</h3></div>
+      ${renderEventsList()}
+    </div>
+  `;
+        const stageBuckets = STAGES.map(
+          (s, i) => state.campaigns.filter((c) => c.stageIndex > i).length,
+        );
+        new Chart(document.getElementById("funnelChart"), {
+          type: "bar",
+          data: {
+            labels: STAGES,
+            datasets: [
+              {
+                label: "Batches passed this stage",
+                data: stageBuckets,
+                backgroundColor: "#3f7a52",
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: "#eef1ef" } },
+              y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            },
+          },
+        });
+      }
+
+      /* =========================================================================
+   CONFIG  (channel routing rules)
+   ========================================================================= */
+      function renderConfig(c) {
+        c.innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-head"><h3>Channel routing rules</h3><span class="sub-action">Decides Email vs WhatsApp per lead</span></div>
+      <div class="rule-row" style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.04em;">
+        <div>Condition</div><div>Example</div><div>Routes to</div><div>On</div>
+      </div>
+      ${state.config.rules
+        .map(
+          (r, i) => `
+        <div class="rule-row">
+          <div>${r.label}</div>
+          <div class="mono" style="color:var(--text-muted);">${r.sample}</div>
+          <div><span class="badge ${r.channel === "Email" ? "badge-accent" : r.channel === "WhatsApp" ? "badge-success" : "badge-neutral"}">${r.channel}</span></div>
+          <div><div class="switch ${r.enabled ? "on" : ""}" onclick="toggleRule(${i})"><div class="knob"></div></div></div>
+        </div>
+      `,
+        )
+        .join("")}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Detected contact mix — ${currentCategory().name}</h3></div>
+      <table>
+        <thead><tr><th>Contact type</th><th>Sample count</th><th>Share</th></tr></thead>
+        <tbody>
+          ${configMixRows()}
+        </tbody>
+      </table>
+    </div>
+  `;
+      }
+      function configMixRows() {
+        const rows = getSample(currentCategory().id);
+        const counts = {
+          "Company domain": 0,
+          "Gmail/consumer domain": 0,
+          "No contact info": 0,
+        };
+        rows.forEach((r) => counts[r.channel]++);
+        const total = rows.length;
+        return Object.entries(counts)
+          .map(
+            ([k, v]) => `
+    <tr><td>${k}</td><td class="mono">${v}</td><td class="mono">${total ? Math.round((v / total) * 100) : 0}%</td></tr>
+  `,
+          )
+          .join("");
+      }
+      function toggleRule(i) {
+        state.config.rules[i].enabled = !state.config.rules[i].enabled;
+        renderView("config");
+      }
+
+      /* =========================================================================
+   EVENTS / TOASTS
+   ========================================================================= */
+      function logEvent(text, badge) {
+        const now = new Date();
+        const time = now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        state.events.unshift({ time, text, badge });
+      }
+      function toast(msg) {
+        const wrap = document.getElementById("toastWrap");
+        const el = document.createElement("div");
+        el.className = "toast";
+        el.textContent = msg;
+        wrap.appendChild(el);
+        setTimeout(() => el.remove(), 2600);
+      }
+    </script>
+  </body>
+</html>
