@@ -58,6 +58,7 @@
   .btn-ghost:hover{background:var(--accent-light);color:var(--accent-dark);}
   .btn-sm{padding:6px 11px;font-size:12px;border-radius:6px;}
   .btn-danger{background:var(--danger-light);color:var(--danger);}
+  .btn-danger:hover{background:var(--danger);color:#fff;}
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   .icon-btn{
     width:34px;height:34px;border-radius:8px;border:1px solid var(--border);
@@ -376,6 +377,18 @@ const CATEGORIES = [
   {id:"mktg",    name:"Marketing & Branding",total:3100, subs:["Digital Marketing","Brand Strategy","Social Media Management","Content Creation","Performance Ads"]},
   {id:"it",      name:"IT Services",         total:2900, subs:["Cloud Infrastructure","Cybersecurity","IT Support & AMC","Software Development","Data Analytics"]},
   {id:"fin",     name:"Financial Planning",  total:1900, subs:["Wealth Management","Mutual Funds Advisory","Retirement Planning","Tax Planning","Estate Planning"]},
+  {id:"constr",  name:"Construction",        total:3900, subs:["Builder/General Contractor","Electrician","Plumbing","HVAC - Heating & Air","Roofing & Gutters","Interior Decorator"]},
+  {id:"consult", name:"Business Consulting", total:2200, subs:["Business Consultant","Business Consultant - Management","Business Broker","Professional Organizer","Business Consultant - Small Business"]},
+  {id:"food",    name:"Food & Beverage",     total:2700, subs:["Restaurant","Cater","Baker","Food Service","Beverage Service","Wine Merchant/Wine"]},
+  {id:"health",  name:"Health & Wellness",   total:3600, subs:["Doctor/Physician","Chiropractor","Massage Therapist","Personal Trainer - Fitness","Nutritionist","Counselor/Psychotherapist"]},
+  {id:"events",  name:"Event & Business Services", total:2000, subs:["Event Planner","Event Manager/Marketer","Corporate Events","Event Rentals","Translator/Language Services"]},
+  {id:"auto",    name:"Car & Motorcycle",    total:3300, subs:["Auto/Car Sales","Auto/Car Repair","Auto/Car Detailing","Auto Glass","Tire Sales/Replacement","Driving Instructor"]},
+  {id:"retail",  name:"Retail",              total:4200, subs:["Clothing & Accessories Retailer","Furniture Retailer","Electronics Retailer","Fine Jewelry","Florist","Gifts"]},
+  {id:"mfg",     name:"Manufacturing",       total:2500, subs:["Machinery & Equipment Manufacture","Food Products","Furniture Manufacture","Textiles","Packaging","Steel Fabrication"]},
+  {id:"sec",     name:"Security & Investigation", total:1600, subs:["Security Systems","CCTV","Locksmith","Security Personnel","Investigative Services/Detective"]},
+  {id:"train",   name:"Training & Coaching", total:2100, subs:["Life Coach","Business Training/Coach","Leadership Coach","Sales Training/Coach","Education Services/Tutor"]},
+  {id:"transport",name:"Transport & Shipping",total:1800, subs:["Moving Company","Courier","Freight Service","Commercial Transportation","Shuttle/Limousine Service"]},
+  {id:"travel",  name:"Travel",              total:1500, subs:["Travel Agent","Tours/Tour Guide","Ticketing"]},
 ];
 
 const COUNTRIES = ["India","USA","UK","UAE","Australia"];
@@ -483,6 +496,11 @@ const state = {
   pipelineBreathingHours: 24,   // hours to wait between stages, set once before Run
 
   events: [],                // activity log
+  sendLog: [],                // detailed per-recipient send records: {date,time,from,to,channel,stage,campaign,batch,category}
+  reportsSearch: "",
+  reportsPage: 1,
+  senderEmail: "rahul.mehta@bnichapter.org",
+  senderWhatsapp: "+91 90000 12345 (WhatsApp Business)",
   totals: { sent: 1763, received: 817 },
 
   config: {
@@ -525,6 +543,7 @@ function handleLogin(){
   const err = document.getElementById('loginError');
   if(!id || !pass){ err.style.display='block'; return; }
   err.style.display='none';
+  state.senderEmail = id.includes('@') ? id : `${id.replace(/\s+/g,'.').toLowerCase()}@bnichapter.org`;
   document.getElementById('view-login').style.display='none';
   document.getElementById('view-loading').style.display='flex';
   runLoadingSequence();
@@ -686,6 +705,18 @@ function revealCountForCategory(catId){
   return Math.min(sample.length, Math.ceil(sample.length * (progress/100)));
 }
 
+// Returns the visible "data count" for a category. While a category is still
+// syncing (or hasn't been added/fetched yet), we never reveal how much data
+// exists in it — the number only appears once the fetch has actually finished.
+function categoryTotalDisplay(id){
+  const cc = CATEGORIES.find(x=>x.id===id);
+  if(!cc) return "—";
+  const progress = state.categoryFetchProgress[id];
+  if(progress===undefined || progress<100){
+    return `<span style="color:var(--text-muted);font-weight:600;">${progress===undefined ? 'Not fetched' : 'Fetching '+progress+'%…'}</span>`;
+  }
+  return cc.total.toLocaleString();
+}
 function getActiveFetches(){
   return Object.entries(state.categoryFetchProgress)
     .filter(([id,p])=>p<100)
@@ -739,13 +770,14 @@ function renderLeads(c){
       if(!q) return true;
       return r.name.toLowerCase().includes(q) || r.company.toLowerCase().includes(q) || r.speciality.toLowerCase().includes(q) || r.phone.includes(q) || r.region.toLowerCase().includes(q);
     });
-    const totalAll = state.selectedDirCategories.reduce((a,id)=>a+CATEGORIES.find(x=>x.id===id).total,0);
+    const allFetched = state.selectedDirCategories.every(id=>state.categoryFetchProgress[id]===100);
+    const totalAll = allFetched ? state.selectedDirCategories.reduce((a,id)=>a+CATEGORIES.find(x=>x.id===id).total,0) : null;
     const perPage=10;
     const totalPages = Math.max(1, Math.ceil(filtered.length/perPage));
     state.leadsPage = Math.min(state.leadsPage, totalPages);
     const pageRows = filtered.slice((state.leadsPage-1)*perPage, state.leadsPage*perPage);
     bodyHtml = `
-      <span class="badge badge-accent" style="margin-bottom:10px;display:inline-block;">Data synced so far: ${combined.length.toLocaleString()} of ${totalAll.toLocaleString()}</span>
+      <span class="badge badge-accent" style="margin-bottom:10px;display:inline-block;">${totalAll!==null ? `Data synced: ${combined.length.toLocaleString()} of ${totalAll.toLocaleString()}` : `Data synced so far: ${combined.length.toLocaleString()} (still fetching…)`}</span>
       <div class="table-scroll">
         <table style="min-width:1500px;">
           <thead><tr>
@@ -792,7 +824,7 @@ function renderLeads(c){
         <div class="multiselect-wrap" id="dirMultiWrap">
           <button class="multiselect-btn" onclick="toggleDirDropdown()" ${hasCats?'':'disabled'}>${dropdownLabel}</button>
           <div class="multiselect-popover" id="dirCatPopover">
-            ${state.addedCategories.map(id=>{ const cc=CATEGORIES.find(x=>x.id===id); const meta=state.categoryMeta[id]; const checked=state.selectedDirCategories.includes(id); return `<label class="cat-option"><input type="checkbox" ${checked?'checked':''} onchange="onDirCatToggle('${id}', this.checked)"><span class="name">${cc.name}${meta?`<div style="font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:none;">${meta.country} · ${meta.region}</div>`:''}</span><span class="count mono">${cc.total.toLocaleString()}</span></label>`; }).join("")}
+            ${state.addedCategories.map(id=>{ const cc=CATEGORIES.find(x=>x.id===id); const meta=state.categoryMeta[id]; const checked=state.selectedDirCategories.includes(id); return `<label class="cat-option"><input type="checkbox" ${checked?'checked':''} onchange="onDirCatToggle('${id}', this.checked)"><span class="name">${cc.name}${meta?`<div style="font-size:10.5px;font-weight:600;color:var(--text-muted);text-transform:none;">${meta.country} · ${meta.region}</div>`:''}</span><span class="count mono">${categoryTotalDisplay(id)}</span></label>`; }).join("")}
           </div>
         </div>
         <div class="search-box"><input type="text" id="leadsSearchInput" placeholder="Search name, company, speciality, phone or region…" value="${state.leadsSearch}" oninput="onLeadsSearch(this.value)" ${hasCats?'':'disabled'}></div>
@@ -803,9 +835,9 @@ function renderLeads(c){
       <div class="card-head"><h3>Category totals fetched from BNI</h3></div>
       ${hasCats ? `
         <table>
-          <thead><tr><th>Category</th><th>Country</th><th>Region</th><th>Data</th><th>Batches at ${REFERENCE_BATCH_SIZE}/batch</th></tr></thead>
+          <thead><tr><th>Category</th><th>Country</th><th>Region</th><th>Data</th></tr></thead>
           <tbody>
-            ${state.addedCategories.map(id=>{ const cc=CATEGORIES.find(x=>x.id===id); const meta=state.categoryMeta[id]||{country:'—',region:'—'}; return `<tr><td>${cc.name}</td><td>${meta.country}</td><td>${meta.region}</td><td class="mono">${cc.total.toLocaleString()}</td><td class="mono">${Math.ceil(cc.total/REFERENCE_BATCH_SIZE)}</td></tr>`; }).join("")}
+            ${state.addedCategories.map(id=>{ const cc=CATEGORIES.find(x=>x.id===id); const meta=state.categoryMeta[id]||{country:'—',region:'—'}; const fetched = state.categoryFetchProgress[id]===100; return `<tr><td>${cc.name}</td><td>${meta.country}</td><td>${meta.region}</td><td class="mono">${categoryTotalDisplay(id)}</td></tr>`; }).join("")}
           </tbody>
         </table>
       ` : `<div class="empty-state">Add a category above to see its totals here.</div>`}
@@ -882,7 +914,7 @@ function renderCategoryModalList(){
     <label class="cat-option">
       <input type="checkbox" ${state.tempCategorySelection.has(c.id)?'checked':''} onchange="toggleTempCategory('${c.id}', this.checked)">
       <span class="name">${c.name}</span>
-      <span class="count mono">${c.total.toLocaleString()}</span>
+      <span class="count mono">${state.addedCategories.includes(c.id) ? categoryTotalDisplay(c.id) : '<span style="color:var(--text-muted);">—</span>'}</span>
     </label>`).join("") : `<div class="empty-state" style="padding:20px;">No category matches "${state.categoryModalSearch}"</div>`;
 }
 function confirmAddCategories(){
@@ -1038,8 +1070,9 @@ function renderBatchDetail(c){
                 </td>
                 <td>${stageLabel(camp)}</td>
                 <td style="min-width:140px;">${stageTrackHtml(camp)}</td>
-                <td style="text-align:right;">
+                <td style="text-align:right;white-space:nowrap;">
                   <button class="icon-btn" title="Run next stage" onclick="advanceCampaign('${camp.id}')" ${camp.stageIndex>=STAGES.length?'disabled':''}>▷</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button>
                 </td>
               </tr>
             `).join("")}
@@ -1127,6 +1160,7 @@ function recipientsForStage(camp, stageIndex){
 function advanceCampaign(id, onDone){
   const camp = findCampaign(id);
   if(!camp || camp.stageIndex>=STAGES.length || camp.sending) return;
+  camp.paused = false;
   const stageIndex = camp.stageIndex;
   const stage = STAGES[stageIndex];
   const meta = stageSendMeta(stageIndex);
@@ -1135,9 +1169,21 @@ function advanceCampaign(id, onDone){
   camp.log = camp.log || [];
   let i = 0;
   function tick(){
+    // Re-check on every tick — the campaign may have been paused or deleted
+    // since the last send, in which case we stop immediately.
+    const live = findCampaign(id);
+    if(!live || live.paused){
+      if(live) live.sending = false;
+      renderView(state.view);
+      return;
+    }
     if(i < recipients.length){
-      const time = new Date().toLocaleTimeString([], {hour12:false});
+      const now = new Date();
+      const time = now.toLocaleTimeString([], {hour12:false});
+      const dateStr = now.toLocaleDateString();
+      const from = fromAddressForChannel(meta.channel);
       camp.log.push({ time, text: `${meta.prefix} ${recipients[i]}` });
+      state.sendLog.unshift({ date: dateStr, time, from, to: recipients[i], channel: meta.channel, stage, campaign: camp.name, batch: camp.batchName, category: camp.category });
       i++;
       if(state.view==='auto' || state.view==='manual') renderView(state.view);
       const gapMs = Math.max(1, parseFloat(camp.sendIntervalSec)||30) * 1000;
@@ -1155,6 +1201,43 @@ function advanceCampaign(id, onDone){
   tick();
 }
 
+// Which "From" address a message is sent from, based on channel.
+function fromAddressForChannel(channel){
+  return channel==='whatsapp' ? state.senderWhatsapp : state.senderEmail;
+}
+
+/* Pause a running campaign (Auto or Manual) — stops the send loop / the
+   auto stage-to-stage chain at the next safe checkpoint. Progress made so
+   far (stages already sent) is kept; the user can hit Run/Send again to
+   pick back up. */
+function pauseCampaign(id){
+  const camp = findCampaign(id);
+  if(!camp) return;
+  camp.paused = true;
+  camp.autoRunActive = false;
+  camp.breathingWait = false;
+  logEvent(`${camp.batchName} / ${camp.name} (${camp.category}) — <b>Paused</b>`, '<span class="badge badge-warn">Paused</span>');
+  toast(`"${camp.name}" paused`);
+  renderView(state.view);
+}
+
+/* Permanently removes a campaign from its batch. Any running send loop for
+   it will stop on its next checkpoint since findCampaign(id) will no longer
+   find it. */
+function deleteCampaign(id){
+  const camp = findCampaign(id);
+  if(!camp) return;
+  if(!confirm(`Delete campaign "${camp.name}"? This can't be undone.`)) return;
+  const batch = findBatch(camp.batchId);
+  if(batch) batch.campaigns = batch.campaigns.filter(x=>x.id!==id);
+  state.autoSelectedIds.delete(id);
+  if(state.autoViewFilter===id){ state.autoViewFilter=null; }
+  if(state.manualViewFilter===id){ state.manualViewFilter=null; }
+  logEvent(`${camp.batchName} / ${camp.name} (${camp.category}) — <b>Deleted</b>`, '<span class="badge badge-danger">Deleted</span>');
+  toast(`Campaign "${camp.name}" deleted`);
+  renderView(state.view);
+}
+
 /* Runs an Auto-mode campaign fully end-to-end: sends each remaining stage,
    waits the user-set "breathing period" (in hours) between stages, then
    sends the next one automatically. Only one button — no manual per-stage
@@ -1164,13 +1247,14 @@ function runFullAutoCampaign(id){
   const camp = findCampaign(id);
   if(!camp || camp.autoRunActive || camp.stageIndex>=STAGES.length) return;
   camp.autoRunActive = true;
+  camp.paused = false;
   renderView(state.view);
   function runNextStage(){
     const c = findCampaign(id);
-    if(!c || c.stageIndex>=STAGES.length){ if(c) c.autoRunActive=false; renderView(state.view); return; }
+    if(!c || c.paused || c.stageIndex>=STAGES.length){ if(c) c.autoRunActive=false; renderView(state.view); return; }
     advanceCampaign(id, ()=>{
       const c2 = findCampaign(id);
-      if(!c2) return;
+      if(!c2 || c2.paused) return;
       if(c2.stageIndex>=STAGES.length){
         c2.autoRunActive = false;
         c2.breathingWait = false;
@@ -1183,7 +1267,7 @@ function runFullAutoCampaign(id){
       renderView(state.view);
       setTimeout(()=>{
         const c3 = findCampaign(id);
-        if(!c3 || !c3.autoRunActive) return;
+        if(!c3 || !c3.autoRunActive || c3.paused) return;
         c3.breathingWait = false;
         runNextStage();
       }, demoDelayMs);
@@ -1230,19 +1314,13 @@ function renderAutoCampaign(c){
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">${camp.leads} data · Stage ${Math.min(camp.stageIndex+1,STAGES.length)} of ${STAGES.length}</div>
         ${stageTrackHtml(camp)}
         <div style="margin-top:14px;">${stageLabel(camp)}</div>
-        <p style="color:var(--text-muted);font-size:12.5px;margin-top:12px;">This campaign is set to <b>Auto</b> — the whole sequence runs on its own. Set the time interval (gap in seconds between each message) and the breathing period (gap in hours between stages) once, then click Run — it'll follow those settings automatically, even if you navigate away.</p>
-        ${complete ? '' : `
+        <p style="color:var(--text-muted);font-size:12.5px;margin-top:12px;">This campaign is set to <b>Auto</b> — click Run and the whole sequence sends itself, stage by stage, even if you navigate away.</p>
+        ${complete ? `<div style="margin-top:10px;"><button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button></div>` : `
         <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:6px;">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Time interval (seconds)</label>
-            <input type="number" min="1" step="1" class="mono" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:110px;" value="${camp.sendIntervalSec}" ${camp.autoRunActive?'disabled':''} onchange="setCampaignSendInterval('${camp.id}', this.value)">
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Breathing period (hours)</label>
-            <input type="number" min="1" step="1" class="mono" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:110px;" value="${camp.breathingHours}" ${camp.autoRunActive?'disabled':''} onchange="setCampaignBreathingHours('${camp.id}', this.value)">
-          </div>
           <button class="btn btn-primary" onclick="runFullAutoCampaign('${camp.id}')" ${camp.autoRunActive?'disabled':''}>▶ ${camp.autoRunActive?'Running…':'Run full campaign automatically'}</button>
-          ${camp.breathingWait ? `<span class="badge badge-warn">Breathing period — next stage in ${camp.breathingHours}h</span>` : (camp.sending ? `<span class="badge badge-accent">Sending "${STAGES[camp.stageIndex]}" (every ${camp.sendIntervalSec}s)…</span>` : '')}
+          ${camp.autoRunActive ? `<button class="btn btn-outline btn-sm" onclick="pauseCampaign('${camp.id}')">⏸ Pause Campaign</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button>
+          ${camp.breathingWait ? `<span class="badge badge-warn">Breathing period — next stage in ${camp.breathingHours}h</span>` : (camp.sending ? `<span class="badge badge-accent">Sending "${STAGES[camp.stageIndex]}"…</span>` : '')}
         </div>`}
         <div style="margin-top:16px;">
           <div class="card-head" style="margin-bottom:8px;"><h3 style="font-size:12px;">Send log</h3></div>
@@ -1272,17 +1350,9 @@ function renderAutoCampaign(c){
         ${STAGES.map(()=>`<div style="flex:1;height:4px;background:var(--accent-light);border-radius:99px;"></div>`).join("")}
       </div>
       <p style="color:var(--text-muted);font-size:12.5px;margin-top:14px;">
-        Tick the campaigns below you want to run, set the time interval and breathing period once, then hit Run — each selected campaign will send its whole remaining sequence on its own, using those settings. It keeps running in the background even if you navigate away.
+        Tick the campaigns below you want to run, then hit Run — each selected campaign will send its whole remaining sequence on its own. It keeps running in the background even if you navigate away.
       </p>
       <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:10px;">
-        <div class="interval-field">
-          <label>Time interval (seconds)</label>
-          <input type="number" min="1" step="1" class="mono" id="autoPipelineInterval" value="${state.pipelineIntervalSec}" onchange="state.pipelineIntervalSec = Math.max(1, parseFloat(this.value)||30)">
-        </div>
-        <div class="interval-field">
-          <label>Breathing period (hours)</label>
-          <input type="number" min="1" step="1" class="mono" id="autoPipelineBreathing" value="${state.pipelineBreathingHours}" onchange="state.pipelineBreathingHours = Math.max(1, parseFloat(this.value)||24)">
-        </div>
         <button class="btn btn-primary" onclick="runSelectedAutoCampaigns()" ${selectedCount===0?'disabled':''}>▶ Run selected auto campaigns (${selectedCount})</button>
       </div>
       ${autoCamps.length===0? `<div class="empty-state" style="margin-top:10px;"><div class="ic">⟳</div>No campaigns are set to Auto yet. Open a batch in <b>Build Campaigns</b> and set it to Auto.</div>`:''}
@@ -1310,7 +1380,11 @@ function renderAutoCampaign(c){
                 <td>${stageLabel(camp)}</td>
                 <td style="min-width:160px;">${stageTrackHtml(camp)}</td>
                 <td>${status}</td>
-                <td style="text-align:right;"><button class="btn btn-ghost btn-sm" onclick="viewCampaignProgress('${camp.id}')">View →</button></td>
+                <td style="text-align:right;white-space:nowrap;">
+                  ${camp.autoRunActive ? `<button class="btn btn-outline btn-sm" onclick="pauseCampaign('${camp.id}')">⏸ Pause</button>` : ''}
+                  <button class="btn btn-ghost btn-sm" onclick="viewCampaignProgress('${camp.id}')">View →</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button>
+                </td>
               </tr>`;}).join("")}
           </tbody>
         </table>
@@ -1363,13 +1437,15 @@ function renderManualCampaign(c){
         ${stageTrackHtml(camp)}
         <div style="margin-top:14px;">${stageLabel(camp)}</div>
         ${camp.stageIndex>=STAGES.length
-          ? `<div style="margin-top:14px;"><span class="badge badge-success">All stages complete</span></div>`
+          ? `<div style="margin-top:14px;display:flex;align-items:center;gap:10px;"><span class="badge badge-success">All stages complete</span><button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button></div>`
           : `<div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:14px;">
               <div>
                 <label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Time interval (seconds)</label>
                 <input type="number" min="1" step="1" class="mono" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;width:110px;" value="${camp.sendIntervalSec}" ${camp.sending?'disabled':''} onchange="setCampaignSendInterval('${camp.id}', this.value)">
               </div>
               <button class="btn btn-primary" onclick="advanceCampaign('${camp.id}')" ${camp.sending?'disabled':''}>▷ ${camp.sending?'Sending…':`Send "${STAGES[camp.stageIndex]}"`}</button>
+              ${camp.sending ? `<button class="btn btn-outline btn-sm" onclick="pauseCampaign('${camp.id}')">⏸ Pause Campaign</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button>
               ${camp.sending ? `<span class="badge badge-accent">Gap between sends: ${camp.sendIntervalSec}s</span>` : ''}
             </div>`}
         <div style="margin-top:16px;">
@@ -1401,7 +1477,9 @@ function renderManualCampaign(c){
                 <td style="white-space:nowrap;">
                   ${camp.stageIndex>=STAGES.length ? `<span class="badge badge-success">Complete</span>` : `
                   <button class="btn btn-primary btn-sm" onclick="advanceCampaign('${camp.id}')" ${camp.sending?'disabled':''}>▷ ${camp.sending?'Sending…':`Send "${STAGES[camp.stageIndex]}"`}</button>`}
+                  ${camp.sending ? `<button class="btn btn-outline btn-sm" onclick="pauseCampaign('${camp.id}')">⏸ Pause</button>` : ''}
                   <button class="btn btn-ghost btn-sm" onclick="viewCampaignProgress('${camp.id}')">View →</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${camp.id}')">🗑 Delete</button>
                 </td>
               </tr>`).join("")}
           </tbody>
@@ -1445,9 +1523,13 @@ function renderReports(c){
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" style="margin-bottom:16px;">
       <div class="card-head"><h3>Activity log</h3></div>
       ${renderEventsList()}
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Detailed send report</h3><span class="sub-action">Every message, from → to, with date &amp; time</span></div>
+      ${renderDetailedSendReport()}
     </div>
   `;
   const stageBuckets = STAGES.map((s,i)=>camps.filter(c=>c.stageIndex>i).length);
@@ -1457,6 +1539,66 @@ function renderReports(c){
     options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{grid:{color:'#eef1ef'}}, y:{grid:{display:false}, ticks:{font:{size:11}}}} }
   });
 }
+
+function renderDetailedSendReport(){
+  if(state.sendLog.length===0){
+    return `<div class="empty-state"><div class="ic">✉</div>No messages sent yet. Run a campaign from <b>Auto</b> or <b>Manual Campaign</b> to see a detailed from → to log here, with date and time.</div>`;
+  }
+  const q = (state.reportsSearch||'').toLowerCase();
+  const filtered = state.sendLog.filter(r=>{
+    if(!q) return true;
+    return r.from.toLowerCase().includes(q) || r.to.toLowerCase().includes(q) || r.campaign.toLowerCase().includes(q) || r.batch.toLowerCase().includes(q) || r.category.toLowerCase().includes(q) || r.stage.toLowerCase().includes(q);
+  });
+  const perPage = 15;
+  const totalPages = Math.max(1, Math.ceil(filtered.length/perPage));
+  state.reportsPage = Math.min(Math.max(1,state.reportsPage), totalPages);
+  const pageRows = filtered.slice((state.reportsPage-1)*perPage, state.reportsPage*perPage);
+  return `
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="reportsSearchInput" placeholder="Search by sender, recipient, campaign, batch or category…" value="${state.reportsSearch}" oninput="onReportsSearch(this.value)"></div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Date</th><th>Time</th><th>From</th><th>To</th><th>Channel</th><th>Stage</th><th>Campaign</th><th>Batch</th><th>Category</th></tr></thead>
+        <tbody>
+          ${pageRows.map(r=>`
+            <tr>
+              <td class="mono">${r.date}</td>
+              <td class="mono">${r.time}</td>
+              <td class="mono">${r.from}</td>
+              <td class="mono">${r.to}</td>
+              <td><span class="badge ${r.channel==='whatsapp'?'badge-success':'badge-accent'}">${r.channel==='whatsapp'?'WhatsApp':'Email'}</span></td>
+              <td style="font-size:12px;">${r.stage}</td>
+              <td>${r.campaign}</td>
+              <td>${r.batch}</td>
+              <td><span class="badge badge-neutral">${r.category}</span></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>Page ${state.reportsPage} of ${totalPages} · ${filtered.length.toLocaleString()} message${filtered.length===1?'':'s'}</span>
+      <span>
+        <button class="btn btn-outline btn-sm" onclick="changeReportsPage(-1)" ${state.reportsPage<=1?'disabled':''}>← Prev</button>
+        <button class="btn btn-outline btn-sm" onclick="changeReportsPage(1)" ${state.reportsPage>=totalPages?'disabled':''}>Next →</button>
+      </span>
+    </div>
+  `;
+}
+function onReportsSearch(v){
+  state.reportsSearch = v;
+  state.reportsPage = 1;
+  const activeEl = document.activeElement;
+  const cursorPos = (activeEl && activeEl.id==='reportsSearchInput') ? activeEl.selectionStart : null;
+  renderView('reports');
+  const input = document.getElementById('reportsSearchInput');
+  if(input){
+    input.focus();
+    const pos = cursorPos===null ? input.value.length : cursorPos;
+    input.setSelectionRange(pos, pos);
+  }
+}
+function changeReportsPage(d){ state.reportsPage += d; renderView('reports'); }
 
 /* =========================================================================
    CONFIG  (channel routing rules)
